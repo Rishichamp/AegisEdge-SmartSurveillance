@@ -1,0 +1,56 @@
+# ============================================================
+# Smart Surveillance System - Git Ignore Rules
+# ============================================================
+# These patterns tell Git which files NOT to track.
+# Large files, generated files, and sensitive data should not
+# be committed to version control.
+# ============================================================
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# --- Virtual Environments ---
+venv/
+env/
+.venv/
+
+# --- Model Weights (too large for Git) ---
+# Model files can be 5MB - 500MB+. Use Git LFS or download scripts instead.
+models/*.pt
+models/*.onnx
+models/*.engine
+models/*.tflite
+!models/.gitkeep
+
+# --- Data Files ---
+data/sample_videos/*.mp4
+data/sample_videos/*.avi
+!data/.gitkeep
+!data/sample_videos/.gitkeep
+!data/zone_configs/*.yaml
+
+# --- Logs & Screenshots ---
+logs/
+*.log
+alert_screenshots/
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Edge Deployment ---
+*.trt
+*.plan

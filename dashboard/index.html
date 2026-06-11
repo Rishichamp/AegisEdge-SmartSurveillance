@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Surveillance System | Edge AI Dashboard</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Dashboard Styling -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Socket.io Client -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <i class="fa-solid fa-shield-halved brand-icon"></i>
+                <div class="brand-text">
+                    <h1>AegisEdge</h1>
+                    <span>Smart Surveillance AI</span>
+                </div>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" id="btn-live">
+                    <i class="fa-solid fa-tv"></i>
+                    <span>Live Stream</span>
+                </a>
+                <a href="#" class="nav-item" id="btn-events">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Event History</span>
+                </a>
+                <a href="#" class="nav-item" id="btn-zones">
+                    <i class="fa-solid fa-draw-polygon"></i>
+                    <span>Restricted Zones</span>
+                </a>
+                <a href="#" class="nav-item" id="btn-settings">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>System Config</span>
+                </a>
+            </nav>
+            
+            <div class="system-health">
+                <div class="health-header">
+                    <span>System Status</span>
+                    <span class="status-indicator online" id="sys-status-text">Online</span>
+                </div>
+                <div class="metric-bar">
+                    <div class="metric-label">
+                        <span>AI Inference FPS</span>
+                        <span id="fps-val">30.0</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="fps-progress" style="width: 100%"></div>
+                    </div>
+                </div>
+                <div class="metric-bar">
+                    <div class="metric-label">
+                        <span>CPU Load</span>
+                        <span id="cpu-val">12%</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar warning" id="cpu-progress" style="width: 12%"></div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="dashboard-header">
+                <div class="header-title">
+                    <h2>Live Operations Monitor</h2>
+                    <p>Real-time edge analytics and behavior processing</p>
+                </div>
+                <div class="header-controls">
+                    <div class="connection-status">
+                        <span class="pulse-dot"></span>
+                        <span id="socket-status">Connected to Edge AI</span>
+                    </div>
+                    <button class="btn btn-primary" id="btn-trigger-test">
+                        <i class="fa-solid fa-play"></i> Test Alert
+                    </button>
+                </div>
+            </header>
+
+            <!-- Grid Layout -->
+            <div class="dashboard-grid">
+                <!-- Video Section -->
+                <section class="card video-card glass">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fa-solid fa-video text-primary"></i>
+                            <h3>Live Video Stream</h3>
+                        </div>
+                        <div class="video-badges">
+                            <span class="badge badge-success" id="badge-source">Camera 0</span>
+                            <span class="badge badge-primary" id="badge-tracks">0 Tracks Active</span>
+                        </div>
+                    </div>
+                    <div class="video-container">
+                        <!-- Stream Feed served by Flask -->
+                        <img src="/video_feed" alt="Surveillance Stream Feed" id="video-feed" onerror="this.src='https://placehold.co/640x480/1a1a2e/ffffff?text=Camera+Connecting...';">
+                        
+                        <div class="overlay-controls">
+                            <button class="control-btn" title="Snapshot" id="btn-snapshot"><i class="fa-solid fa-camera"></i></button>
+                            <button class="control-btn" title="Toggle Grid" id="btn-grid"><i class="fa-solid fa-border-all"></i></button>
+                            <button class="control-btn" title="Fullscreen" id="btn-fullscreen"><i class="fa-solid fa-expand"></i></button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Alerts Side Panel -->
+                <section class="card alerts-card glass">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fa-solid fa-triangle-exclamation text-danger"></i>
+                            <h3>Real-Time Alerts</h3>
+                        </div>
+                        <span class="badge badge-danger" id="alert-count">0 New</span>
+                    </div>
+                    <div class="alerts-container" id="alerts-list">
+                        <!-- Placeholder if no alerts -->
+                        <div class="empty-state" id="no-alerts-msg">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <p>No active threats detected</p>
+                            <span>Surveillance system is monitoring for fights, intrusions, and theft.</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- Bottom Events Section -->
+            <section class="card events-table-card glass">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fa-solid fa-clock-rotate-left text-info"></i>
+                        <h3>Recent Event Log</h3>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="events-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Event Type</th>
+                                <th>Severity</th>
+                                <th>Confidence</th>
+                                <th>Details</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="events-log-body">
+                            <tr class="empty-table-row">
+                                <td colspan="6">No recent events logged. Stream frames to begin...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Alert Modal / Detail View -->
+    <div class="modal" id="alert-modal">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-circle-exclamation text-danger"></i> Alert Investigation</h3>
+                <button class="close-btn" id="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-img-container">
+                    <img src="" id="modal-screenshot" alt="Event Capture">
+                </div>
+                <div class="modal-details">
+                    <div class="detail-row">
+                        <strong>Event:</strong> <span id="modal-event-type"></span>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Severity:</strong> <span id="modal-severity" class="badge"></span>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Confidence:</strong> <span id="modal-confidence"></span>
+                    </div>
+                    <div class="detail-row">
+                        <strong>Description:</strong> <span id="modal-desc"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

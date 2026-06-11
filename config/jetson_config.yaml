@@ -1,0 +1,70 @@
+# ============================================================
+# Smart Surveillance System - Jetson Nano Configuration
+# ============================================================
+# Optimized settings for NVIDIA Jetson Nano (4GB).
+# ============================================================
+
+video:
+  source: 0
+  width: 640
+  height: 480
+  fps: 30
+  buffer_size: 1
+
+detection:
+  model: "yolov8n.engine"  # TensorRT engine format
+  confidence_threshold: 0.5
+  target_classes: [0, 24, 26, 28, 63, 67]
+  device: "0"  # Jetson CUDA device
+  input_size: 640
+
+tracking:
+  tracker: "bytetrack.yaml"
+  persist: true
+
+anomaly:
+  fight_detection:
+    enabled: true
+    confidence_threshold: 0.65
+    min_persons: 2
+    proximity_threshold: 150
+    motion_threshold: 30.0
+  intrusion_detection:
+    enabled: true
+    confidence_threshold: 0.5
+  theft_detection:
+    enabled: false  # Disabled to save computational resources
+    confidence_threshold: 0.5
+    monitored_objects: ["laptop", "cell phone", "backpack"]
+  temporal_model:
+    architecture: "lstm"
+    sequence_length: 12
+    feature_dim: 576
+    hidden_size: 128
+    num_layers: 1
+    num_classes: 4
+    weights_path: null
+
+zones:
+  - name: "Restricted Area 1"
+    polygon: [[100, 100], [400, 100], [400, 400], [100, 400]]
+    type: "restricted"
+    color: [0, 0, 255]
+
+alerting:
+  cooldown_seconds: 30
+  save_screenshots: true
+  screenshot_dir: "logs/alert_screenshots"
+  log_file: "logs/events.jsonl"
+
+dashboard:
+  enabled: true
+  host: "0.0.0.0"
+  port: 5000
+  stream_quality: 50
+  stream_fps: 10
+
+performance:
+  use_fp16: true  # Enable TensorRT half precision
+  num_threads: 4
+  frame_skip: 2   # Process every 2nd frame

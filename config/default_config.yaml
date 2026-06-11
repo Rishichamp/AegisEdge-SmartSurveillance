@@ -1,0 +1,84 @@
+# ============================================================
+# Smart Surveillance System - Default Configuration
+# ============================================================
+# This YAML file controls ALL system behavior.
+# Modify these values to customize the system for your setup.
+# ============================================================
+
+# --- Video Input Configuration ---
+video:
+  source: 0  # 0 for webcam, "path/to/video" for file
+  width: 640
+  height: 480
+  fps: 30
+  buffer_size: 2
+
+# --- Object Detection Configuration ---
+detection:
+  model: "yolov8n.pt"  # Pre-trained YOLOv8 model path or variant name
+  confidence_threshold: 0.5
+  target_classes: [0, 24, 26, 28, 63, 67] # 0: person, 24: backpack, 26: handbag, 28: suitcase, 63: laptop, 67: cell phone
+  device: "cpu"
+  input_size: 640
+
+# --- Object Tracking Configuration ---
+tracking:
+  tracker: "bytetrack.yaml"
+  persist: true
+
+# --- Anomaly Detection Configuration ---
+anomaly:
+  fight_detection:
+    enabled: true
+    confidence_threshold: 0.6
+    min_persons: 2
+    proximity_threshold: 150 # pixels
+    motion_threshold: 30.0   # Optical flow motion magnitude
+  
+  intrusion_detection:
+    enabled: true
+    confidence_threshold: 0.5
+  
+  theft_detection:
+    enabled: true
+    confidence_threshold: 0.5
+    proximity_threshold: 120
+    monitored_objects: ["laptop", "cell phone", "backpack", "handbag", "suitcase"]
+  
+  temporal_model:
+    architecture: "lstm"
+    sequence_length: 16
+    feature_dim: 576  # From MobileNetV3 ROI feature extractor
+    hidden_size: 256
+    num_layers: 2
+    num_classes: 4    # [normal, fight, theft, intrusion]
+    weights_path: null
+
+# --- Zone Configuration ---
+# Coordinates represent vertices of restricted zone polygons in pixel space (width x height)
+zones:
+  - name: "Restricted Area 1"
+    polygon: [[100, 100], [400, 100], [400, 400], [100, 400]]
+    type: "restricted" # "restricted" (CRITICAL) or "monitored" (WARNING)
+    color: [0, 0, 255]  # Red in BGR
+
+# --- Alert Configuration ---
+alerting:
+  cooldown_seconds: 30
+  save_screenshots: true
+  screenshot_dir: "logs/alert_screenshots"
+  log_file: "logs/events.jsonl"
+
+# --- Dashboard Configuration ---
+dashboard:
+  enabled: true
+  host: "0.0.0.0"
+  port: 5000
+  stream_quality: 70
+  stream_fps: 15
+
+# --- Performance Configuration ---
+performance:
+  use_fp16: false
+  num_threads: 4
+  frame_skip: 1  # 1 = process every frame, 2 = process every other, etc.

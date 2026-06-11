@@ -1,0 +1,70 @@
+# ============================================================
+# Smart Surveillance System - Raspberry Pi Configuration
+# ============================================================
+# Optimized for Raspberry Pi 4/5 (CPU-only inference).
+# ============================================================
+
+video:
+  source: 0
+  width: 320
+  height: 240
+  fps: 15
+  buffer_size: 1
+
+detection:
+  model: "yolov8n.onnx"  # ONNX format for CPU runtime
+  confidence_threshold: 0.5
+  target_classes: [0]  # Detect only persons
+  device: "cpu"
+  input_size: 320
+
+tracking:
+  tracker: "bytetrack.yaml"
+  persist: true
+
+anomaly:
+  fight_detection:
+    enabled: false
+    confidence_threshold: 0.7
+    min_persons: 2
+    proximity_threshold: 100
+    motion_threshold: 30.0
+  intrusion_detection:
+    enabled: true
+    confidence_threshold: 0.5
+  theft_detection:
+    enabled: false
+    confidence_threshold: 0.5
+    monitored_objects: []
+  temporal_model:
+    architecture: "lstm"
+    sequence_length: 8
+    feature_dim: 576
+    hidden_size: 64
+    num_layers: 1
+    num_classes: 4
+    weights_path: null
+
+zones:
+  - name: "Restricted Area 1"
+    polygon: [[50, 50], [200, 50], [200, 200], [50, 200]]
+    type: "restricted"
+    color: [0, 0, 255]
+
+alerting:
+  cooldown_seconds: 60
+  save_screenshots: true
+  screenshot_dir: "logs/alert_screenshots"
+  log_file: "logs/events.jsonl"
+
+dashboard:
+  enabled: true
+  host: "0.0.0.0"
+  port: 5000
+  stream_quality: 40
+  stream_fps: 5
+
+performance:
+  use_fp16: false
+  num_threads: 4
+  frame_skip: 3  # Process every 3rd frame

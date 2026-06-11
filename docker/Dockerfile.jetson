@@ -1,0 +1,63 @@
+# ==================================================================
+# AegisEdge Smart Surveillance System - Jetson Deployment Dockerfile
+# ==================================================================
+# This Dockerfile compiles the system for NVIDIA Jetson edge boards.
+# It leverages NVIDIA L4T (Linux for Tegra) PyTorch container base,
+# which has CUDA, PyTorch, and OpenCV pre-compiled for Jetson hardware.
+#
+# JetPack 5.x Base Image for Orin / Xavier (Python 3.8 / PyTorch 2.0 / CUDA 11.4)
+# If deploying on older Jetson Nano (JetPack 4.6.x), use:
+# nvcr.io/nvidia/l4t-ml:r32.7.1-py3
+# ==================================================================
+FROM nvcr.io/nvidia/l4t-pytorch:r35.2.1-pth2.0-py3
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Install system dependencies needed for OpenCV, UI packages, and system utilities
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    git \
+    curl \
+    libglib2.0-0 \
+    libgl1-mesa-glx \
+    libgomp1 \
+    python3-pip \
+    python3-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip
+RUN python3 -m pip install --upgrade pip
+
+# Copy requirements file first to utilize Docker layer caching
+COPY requirements.txt .
+
+# Install dependencies.
+# Note: In Jetson containers, PyTorch and torchvision are pre-installed.
+# We modify requirements to prevent reinstalling standard torch/torchvision 
+# which would overwrite Nvidia's optimized builds.
+RUN grep -v "torch" requirements.txt > requirements_jetson.txt && \
+    python3 -m pip install --no-cache-dir -r requirements_jetson.txt
+
+# Install psutil and Gunicorn for production dashboard serving
+RUN python3 -m pip install --no-cache-dir psutil gunicorn
+
+# Copy the rest of the application codebase
+COPY . .
+
+# Create logs directories for event logs and screenshots
+RUN mkdir -p logs/alert_screenshots models
+
+# Expose port 5000 for the Flask Web Dashboard
+EXPOSE 5000
+
+# Start the surveillance system using the demo configuration or live camera source
+# We set host to 0.0.0.0 so it is accessible from the host OS and local network.
+ENTRYPOINT ["python3", "scripts/run_surveillance.py", "--config", "config/jetson_config.yaml"]

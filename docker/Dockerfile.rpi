@@ -1,0 +1,57 @@
+# ==================================================================
+# AegisEdge Surveillance System - Raspberry Pi / CPU-Only Dockerfile
+# ==================================================================
+# This Dockerfile containerizes the system for Raspberry Pi 4/5 
+# (64-bit OS) or CPU-only environments. It utilizes PyTorch CPU-only 
+# packages to keep the container extremely lightweight.
+# ==================================================================
+FROM python:3.10-slim-bullseye
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies required by OpenCV and other libraries
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    git \
+    curl \
+    libglib2.0-0 \
+    libgl1-mesa-glx \
+    libgomp1 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip and install wheel
+RUN python3 -m pip install --upgrade pip setuptools wheel
+
+# Copy requirements file
+COPY requirements.txt .
+
+# Install CPU-specific PyTorch to keep the image small.
+# Standard PyTorch includes massive CUDA binaries (2GB+) which are useless on Raspberry Pi.
+# We download the CPU wheel from PyTorch's official wheel index.
+RUN pip3 install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+# Install the rest of the requirements
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Install psutil for monitoring CPU load in container
+RUN pip3 install --no-cache-dir psutil
+
+# Copy application source code
+COPY . .
+
+# Create logs directories
+RUN mkdir -p logs/alert_screenshots models
+
+# Expose Web Dashboard Port
+EXPOSE 5000
+
+# Set entrypoint to run with the CPU-optimized config file
+ENTRYPOINT ["python3", "scripts/run_surveillance.py", "--config", "config/rpi_config.yaml"]
