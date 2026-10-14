@@ -58,7 +58,7 @@ def export_to_onnx(weights_path: str, output_path: str):
     # 2. Load PyTorch weights checkpoint
     if os.path.exists(weights_path):
         print(f"[ONNX] Loading trained weights checkpoint: {weights_path}")
-        model.load_state_dict(torch.load(weights_path, map_location="cpu"))
+        model.load_state_dict(torch.load(weights_path, map_location="cpu", weights_only=True))
     else:
         print(f"[ONNX] Warning: Checkpoint '{weights_path}' not found on disk.")
         print("[ONNX] Exporting model with default/initialized weights for structural demo.")

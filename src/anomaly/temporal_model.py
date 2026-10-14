@@ -57,7 +57,7 @@ class TemporalAnomalyPredictor:
         if weights_path is not None:
             try:
                 print(f"[TEMPORAL] Loading weights from: {weights_path}")
-                self.model.load_state_dict(torch.load(weights_path, map_location=self.device))
+                self.model.load_state_dict(torch.load(weights_path, map_location=self.device, weights_only=True))
                 self.has_weights = True
             except Exception as e:
                 print(f"[TEMPORAL] Warning: Could not load weights: {e}. Running with random/demo initialization.")

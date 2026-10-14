@@ -166,11 +166,17 @@ class FightDetector:
         # Calculate average LSTM fight score for involved parties
         avg_lstm_score = float(np.mean(lstm_fight_scores)) if lstm_fight_scores else 0.0
         
-        # Rules-based score: close proximity + high motion
-        rules_score = 0.5 * motion_score + 0.5 * (1.0 - (min(dist, self.proximity_threshold) / self.proximity_threshold))
-        
-        # Fuse scores
-        combined_score = (self.lstm_weight * avg_lstm_score) + (self.rules_weight * rules_score)
+        # Rules-based score: close proximity (of the closest pair) + high motion
+        closest = min(d for _, _, d in close_pairs)
+        rules_score = 0.5 * motion_score + 0.5 * (1.0 - (min(closest, self.proximity_threshold) / self.proximity_threshold))
+
+        # Fuse scores. With no LSTM evidence (model not loaded, or tracks not
+        # yet classified) use the rules alone: weighting in a missing score of
+        # 0 capped the result below the threshold, so fights were never flagged.
+        if lstm_fight_scores:
+            combined_score = (self.lstm_weight * avg_lstm_score) + (self.rules_weight * rules_score)
+        else:
+            combined_score = rules_score
         
         # We flag a fight if the combined score exceeds 0.55
         is_fight = combined_score >= 0.55

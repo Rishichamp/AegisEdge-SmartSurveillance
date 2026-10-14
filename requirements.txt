@@ -14,8 +14,8 @@
 #   1. More Pythonic and easier to debug
 #   2. Dynamic computation graphs (easier for variable-length sequences)
 #   3. Better research community support
-torch>=2.0.0
-torchvision>=0.15.0
+torch>=2.13.0
+torchvision>=0.28.0
 
 # --- Object Detection ---
 # Ultralytics YOLOv8: State-of-the-art real-time object detection.
@@ -24,7 +24,7 @@ torchvision>=0.15.0
 #   - Built-in object tracking (ByteTrack)
 #   - One-line export to TensorRT/ONNX/TFLite
 #   - Simple Python API
-ultralytics>=8.0.0
+ultralytics>=8.3.50
 
 # --- Computer Vision ---
 # OpenCV: The Swiss Army knife of computer vision.
@@ -33,7 +33,7 @@ ultralytics>=8.0.0
 #   - Drawing bounding boxes and annotations on frames
 #   - Image preprocessing (resize, color conversion)
 #   - Optical flow computation (for motion detection)
-opencv-python>=4.8.0
+opencv-python>=4.10.0.84
 
 # --- Numerical Computing ---
 # NumPy: The foundation for numerical operations in Python.
@@ -54,7 +54,7 @@ scipy>=1.11.0
 # PyYAML: Parse YAML configuration files.
 # YAML is more readable than JSON for configuration.
 # Our system is highly configurable via YAML files.
-PyYAML>=6.0
+PyYAML>=6.0.2
 
 # --- Web Dashboard Backend ---
 # Flask: Lightweight web framework for our monitoring dashboard.
@@ -62,15 +62,15 @@ PyYAML>=6.0
 #   1. Simpler for a single-page dashboard
 #   2. Less overhead
 #   3. Easy WebSocket integration
-Flask>=3.0.0
+Flask>=3.1.3
 
 # Flask-SocketIO: WebSocket support for Flask.
 # WebSockets enable real-time, bidirectional communication.
 # This is how we stream live video and alerts to the browser
 # WITHOUT the browser constantly polling the server.
-flask-socketio>=5.3.0
+flask-socketio>=5.3.6
 
 # --- Image Processing ---
 # Pillow: Python Imaging Library for image manipulation.
 # Used for saving alert screenshots in various formats.
-Pillow>=10.0.0
+Pillow>=12.3.0
