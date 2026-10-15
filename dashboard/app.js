@@ -160,15 +160,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         item.innerHTML = `
             <div class="alert-header">
-                <span class="alert-title-text"><i class="fa-solid ${typeIcon}"></i> ${alert.type}</span>
-                <span class="alert-time">${timestamp}</span>
+                <span class="alert-title-text"><i class="fa-solid ${typeIcon}"></i> ${escapeHtml(alert.type)}</span>
+                <span class="alert-time">${escapeHtml(timestamp)}</span>
             </div>
             <div class="alert-body">
-                ${alert.description}
+                ${escapeHtml(alert.description)}
             </div>
             <div class="alert-meta">
-                <span>Confidence: ${(alert.confidence * 100).toFixed(0)}%</span>
-                <span class="badge ${alert.severity === 'critical' ? 'badge-danger' : 'badge-warning'}">${alert.severity}</span>
+                <span>Confidence: ${(Number(alert.confidence) * 100).toFixed(0)}%</span>
+                <span class="badge ${alert.severity === 'critical' ? 'badge-danger' : 'badge-warning'}">${escapeHtml(alert.severity)}</span>
             </div>
         `;
         
@@ -188,6 +188,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Alert text goes into innerHTML below; escape it so a zone name or
+    // description containing "<" can't inject markup.
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
+
     // Helper: Append a detailed row to the main event tracker list
     function addEventTableRow(alert) {
         // Clear empty state row if present
@@ -203,13 +211,13 @@ document.addEventListener('DOMContentLoaded', () => {
             : `<span class="badge badge-warning">Warning</span>`;
             
         tr.innerHTML = `
-            <td><strong>${timestamp}</strong></td>
-            <td>${alert.type}</td>
+            <td><strong>${escapeHtml(timestamp)}</strong></td>
+            <td>${escapeHtml(alert.type)}</td>
             <td>${severityBadge}</td>
-            <td>${(alert.confidence * 100).toFixed(0)}%</td>
-            <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${alert.description}</td>
+            <td>${(Number(alert.confidence) * 100).toFixed(0)}%</td>
+            <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(alert.description)}</td>
             <td>
-                <button class="btn-view-alert" data-alert-id="${alert.id}">
+                <button class="btn-view-alert" data-alert-id="${escapeHtml(alert.id)}">
                     <i class="fa-solid fa-magnifying-glass"></i> View
                 </button>
             </td>

@@ -16,11 +16,11 @@ To make the system production-grade, we build a Web Dashboard:
    and hardware metrics (FPS, memory usage) to the browser without the browser reloading.
 """
 
+import hmac
 import os
 import time
-import queue
 import threading
-from flask import Flask, render_template, Response, send_from_directory, jsonify
+from flask import Flask, Response, send_from_directory, jsonify, request
 from flask_socketio import SocketIO, emit
 import cv2
 import numpy as np
@@ -41,21 +41,48 @@ class DashboardServer:
         self.project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         self.dashboard_dir = os.path.join(self.project_root, "dashboard")
         
+        # Optional login. The dashboard shows the live camera feed and binds to
+        # all interfaces by default, so anyone on the network could watch it.
+        # Set AEGIS_DASHBOARD_PASSWORD (and optionally AEGIS_DASHBOARD_USER,
+        # default "admin") to require HTTP Basic auth for every page, the
+        # video feed and the WebSocket.
+        self.auth_user = os.getenv("AEGIS_DASHBOARD_USER", "admin")
+        self.auth_password = os.getenv("AEGIS_DASHBOARD_PASSWORD", "")
+        if not self.auth_password and host not in ("127.0.0.1", "localhost"):
+            print(f"[DASHBOARD] WARNING: serving the camera feed on {host} without a password. "
+                  "Set AEGIS_DASHBOARD_PASSWORD to require a login.")
+
         # Initialize Flask & SocketIO
         self.app = Flask(__name__, static_folder=None)
         # cors_allowed_origins="*" allows connection from other devices on local network
         self.socketio = SocketIO(self.app, cors_allowed_origins="*")
-        
-        # Threading buffers
-        self.frame_queue = queue.Queue(maxsize=1)
+
+        # Latest frame, shared by every viewer. (A size-1 queue meant each
+        # frame went to just one viewer: two open tabs got half the FPS each.)
+        self._frame = None
+        self._frame_id = 0
+        self._frame_cond = threading.Condition()
         self.running = False
         self._server_thread = None
         
         self._register_routes()
         self._register_socket_events()
         
+    def _authorized(self) -> bool:
+        if not self.auth_password:
+            return True
+        auth = request.authorization
+        return bool(auth) and hmac.compare_digest(auth.username or "", self.auth_user) \
+            and hmac.compare_digest(auth.password or "", self.auth_password)
+
     def _register_routes(self):
         """Define Flask HTTP endpoints."""
+
+        @self.app.before_request
+        def require_login():
+            if not self._authorized():
+                return Response("Login required", 401,
+                                {"WWW-Authenticate": 'Basic realm="AegisEdge dashboard"'})
         
         @self.app.route('/')
         def index():
@@ -111,6 +138,8 @@ class DashboardServer:
         
         @self.socketio.on('connect')
         def handle_connect():
+            if not self._authorized():
+                return False  # reject the WebSocket
             print("[DASHBOARD] Client connected to WebSocket.")
             emit('system_status', {'connected': True, 'timestamp': time.time()})
             
@@ -120,10 +149,16 @@ class DashboardServer:
             
     def _generate_frames(self):
         """Generator function that yields JPEG compressed video frames."""
+        last_id = 0  # frame ids start at 1; 0 = nothing published yet
         while self.running:
             try:
-                # Grab a frame from queue. Blocks up to 1 second.
-                frame = self.frame_queue.get(timeout=1.0)
+                # Wait (up to 1 s) for a frame newer than the last one sent.
+                with self._frame_cond:
+                    self._frame_cond.wait_for(lambda: self._frame_id != last_id or not self.running,
+                                              timeout=1.0)
+                    if self._frame_id == last_id:
+                        continue
+                    frame, last_id = self._frame, self._frame_id
                 
                 # Compress the frame to JPEG
                 # encode_param specifies quality (0-100). Lower = less bandwidth.
@@ -139,9 +174,6 @@ class DashboardServer:
                 yield (b'--frame\r\n'
                        b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
                        
-            except queue.Empty:
-                # If no frame arrived, yield a small blank frame or pause briefly
-                time.sleep(0.03)
             except Exception as e:
                 print(f"[DASHBOARD] Stream error: {e}")
                 break
@@ -152,17 +184,11 @@ class DashboardServer:
         """
         if not self.running:
             return
-            
-        if self.frame_queue.full():
-            try:
-                self.frame_queue.get_nowait()
-            except queue.Empty:
-                pass
-                
-        try:
-            self.frame_queue.put_nowait(frame)
-        except queue.Full:
-            pass
+
+        with self._frame_cond:
+            self._frame = frame
+            self._frame_id += 1
+            self._frame_cond.notify_all()
             
     def send_alert(self, alert_event: Dict[str, Any]):
         """
@@ -202,5 +228,7 @@ class DashboardServer:
     def stop(self):
         """Stop the server."""
         self.running = False
+        with self._frame_cond:
+            self._frame_cond.notify_all()
         print("[DASHBOARD] Stopped.")
         # Flask-SocketIO runs as a daemon thread, so stopping the main process closes it.

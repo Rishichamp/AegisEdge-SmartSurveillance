@@ -248,6 +248,12 @@ All behavior is controlled via `config/default_config.yaml`. Key settings:
 | Zones | `zones[].polygon` | `[[x,y], ...]` | Vertex coordinates of restricted polygons |
 | Alerting | `alerting.cooldown_seconds` | `30` | Seconds before a duplicate alert can fire |
 | Dashboard | `dashboard.port` | `5000` | Web server port |
+| | `dashboard.host` | `0.0.0.0` | Use `127.0.0.1` to keep the dashboard on this machine only |
+
+**Dashboard login.** The dashboard streams the live camera feed and listens on
+all network interfaces by default. Set the environment variable
+`AEGIS_DASHBOARD_PASSWORD` (and optionally `AEGIS_DASHBOARD_USER`, default
+`admin`) to require a login for the page, the video feed and the WebSocket.
 
 **Example — adding a custom restricted zone:**
 
