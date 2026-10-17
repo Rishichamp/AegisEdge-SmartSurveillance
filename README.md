@@ -343,6 +343,10 @@ All tests should output `ok` and finish with `OK`. Tests cover zone geometry, tr
 
 ---
 
+## Author
+
+**Rishi Singh** — [GitHub](https://github.com/Rishichamp)
+
 ## License
 
 MIT License — see [LICENSE](LICENSE) for details.
